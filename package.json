@@ -1,0 +1,34 @@
+{
+  "name": "com.haruchanz64.gacha-engine",
+  "version": "1.0.0",
+  "displayName": "GachaEngine",
+  "description": "Modular Unity 6 gacha and banner framework supporting Standard, Limited 50/50, Fate Path, and Step-Up banners, customizable rarity labels and pity rules, 1-hour refreshed JSON pull history, and a UI Toolkit simulator with Banner Details and History views.",
+  "unity": "6000.0",
+  "license": "MIT",
+  "keywords": [
+    "gacha",
+    "banner",
+    "pity",
+    "loot",
+    "probability",
+    "game-design",
+    "ui-toolkit",
+    "unity-tool"
+  ],
+  "author": {
+    "name": "haruchanz64",
+    "url": "https://haruchanz64.github.io"
+  },
+  "samples": [
+    {
+      "displayName": "Custom Pool Modifier Sample",
+      "description": "Example IGachaPoolModifier demonstrating custom rate hooks on GachaRoller.",
+      "path": "Samples~/CustomRules"
+    },
+    {
+      "displayName": "Canvas & Scene Wiring Sample",
+      "description": "Example IGachaRevealSequence showing how to wire GachaController to Canvas buttons, VFX, and audio.",
+      "path": "Samples~/CanvasAndSceneWiring"
+    }
+  ]
+}

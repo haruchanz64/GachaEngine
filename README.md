@@ -8,7 +8,7 @@ GachaEngine separates pure C# probability math from Unity UI and persistence lay
 
 - **Customizable rarity tiers and pity thresholds:** Define your own tier names (`5★ / SSR`, `S-Rank`, `4★ / SR`, `A-Rank`), base drop rates, soft pity start pull, soft pity bonus per pull, hard pity pull count, and featured rate-up odds (`50/50`, `75/25`, or any custom ratio) per banner.
 - **Four banner archetypes:** Standard, Limited Rate-Up with cross-banner carry-over guarantees by `pityGroupId`, Fate Path (target guarantee after `N` misses), and Step-Up ladders with per-step cost overrides and guaranteed rarity milestones.
-- **UI Toolkit Banner Simulator (`Tools > GachaEngine > Banner Simulator`):**
+- **UI Toolkit Banner Simulator (`Tools > HaruChanZ64 > Gameplay > GachaEngine > Banner Simulator`):**
   - **Banner & Pulls:** Live controls for editing top-tier and mid-tier labels, soft/hard pity, and featured rate-up percentage, with x1 and x10 test pulls and real-time pity progress bars.
   - **Banner Details:** Rate-up item and character showcase cards paired with the complete itemized pool, drop rates, pity rules, and Step-Up milestones.
   - **Pull History (1h Refresh):** Paginated and rarity-filtered history log with a 1-hour (`3600s`) refresh cycle, pending counter, countdown timer, manual refresh check, force-refresh button for Editor inspection, and one-click JSON and CSV export.
@@ -52,7 +52,7 @@ Add the package path to `Packages/manifest.json`:
 
 Right-click in the Project window and select **Create > GachaEngine > Banner Asset**. Use the custom Inspector buttons (**Limited 50/50**, **Fate Path Weapon**, or **Step-Up Ladder**) to seed a starting template, then adjust the tier labels, soft/hard pity pull counts, rate-up percentages, and item pool.
 
-Click **Open in Banner Simulator** in the Inspector (or open **Tools > GachaEngine > Banner Simulator**) to test pulls, inspect the Banner Details sheet, view Pull History, and run Monte Carlo simulations.
+Click **Open in Banner Simulator** in the Inspector (or open **Tools > HaruChanZ64 > Gameplay > GachaEngine > Banner Simulator**) to test pulls, inspect the Banner Details sheet, view Pull History, and run Monte Carlo simulations.
 
 ### 2. Roll from C# at runtime
 

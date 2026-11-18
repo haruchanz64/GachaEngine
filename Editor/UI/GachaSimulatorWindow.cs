@@ -36,7 +36,7 @@ namespace GachaEngine.Editor.UI
         private ScrollView _body;
         private Label _statusLabel;
 
-        [MenuItem("Tools/GachaEngine/Banner Simulator", false, 10)]
+        [MenuItem("Tools/HaruChanZ64/Gameplay/GachaEngine/Banner Simulator", false, 134)]
         public static void ShowWindow()
         {
             var window = GetWindow<GachaSimulatorWindow>("GachaEngine");

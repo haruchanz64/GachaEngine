@@ -6,19 +6,32 @@ using UnityEngine;
 
 namespace GachaEngine.Engine
 {
+    /// <summary>
+    /// Default <see cref="IGachaRng"/> backed by <see cref="System.Random"/> with optional deterministic seeding.
+    /// </summary>
     public sealed class SeededGachaRng : IGachaRng
     {
         private readonly System.Random _rng;
 
+        /// <summary>
+        /// Creates an RNG instance with an optional fixed <paramref name="seed"/> for reproducible pulls and simulations.
+        /// </summary>
+        /// <param name="seed">Optional integer seed; uses time-dependent default seeding when <c>null</c>.</param>
         public SeededGachaRng(int? seed = null)
         {
             _rng = seed.HasValue ? new System.Random(seed.Value) : new System.Random();
         }
 
+        /// <inheritdoc/>
         public double NextDouble() => _rng.NextDouble();
+
+        /// <inheritdoc/>
         public int NextInt(int minInclusive, int maxExclusive) => _rng.Next(minInclusive, maxExclusive);
     }
 
+    /// <summary>
+    /// Serialization wrapper used by <see cref="InMemoryPityStore"/> to round-trip pity states through <see cref="JsonUtility"/>.
+    /// </summary>
     [Serializable]
     internal sealed class PityStoreSnapshot
     {
@@ -26,12 +39,13 @@ namespace GachaEngine.Engine
     }
 
     /// <summary>
-    /// Default in-memory IPityStore with JSON export/import helpers (compatible with SaveEncryptionToolkit).
+    /// Default in-memory <see cref="IPityStore"/> with JSON snapshot export and import helpers.
     /// </summary>
     public sealed class InMemoryPityStore : IPityStore
     {
         private readonly Dictionary<string, GachaPityState> _states = new Dictionary<string, GachaPityState>(StringComparer.Ordinal);
 
+        /// <inheritdoc/>
         public GachaPityState GetOrCreate(string pityGroupId)
         {
             string key = string.IsNullOrWhiteSpace(pityGroupId) ? "default" : pityGroupId;
@@ -43,14 +57,20 @@ namespace GachaEngine.Engine
             return state;
         }
 
+        /// <inheritdoc/>
         public void Save(string pityGroupId, GachaPityState state)
         {
             string key = string.IsNullOrWhiteSpace(pityGroupId) ? "default" : pityGroupId;
             _states[key] = state;
         }
 
+        /// <inheritdoc/>
         public void Clear() => _states.Clear();
 
+        /// <summary>
+        /// Serializes all stored pity states to a <see cref="JsonUtility"/>-compatible JSON string.
+        /// </summary>
+        /// <param name="prettyPrint">When <c>true</c>, formats the output JSON with indentation.</param>
         public string ExportJson(bool prettyPrint = true)
         {
             var snap = new PityStoreSnapshot();
@@ -58,6 +78,10 @@ namespace GachaEngine.Engine
             return JsonUtility.ToJson(snap, prettyPrint);
         }
 
+        /// <summary>
+        /// Replaces all in-memory pity states with entries deserialized from <paramref name="json"/>.
+        /// </summary>
+        /// <param name="json">JSON snapshot previously produced by <see cref="ExportJson"/>; blank input leaves the store empty.</param>
         public void ImportJson(string json)
         {
             _states.Clear();
@@ -75,8 +99,12 @@ namespace GachaEngine.Engine
         }
     }
 
+    /// <summary>
+    /// Default <see cref="IDuplicateResolver"/> that grants standard duplicate shards until <see cref="GachaItemEntry.maxOwnedRank"/> is exceeded, then awards overflow currency.
+    /// </summary>
     public sealed class DefaultDuplicateResolver : IDuplicateResolver
     {
+        /// <inheritdoc/>
         public DuplicateResolution Resolve(GachaItemEntry item, int ownedCountBeforePull)
         {
             int nextOwned = ownedCountBeforePull + 1;
@@ -102,13 +130,18 @@ namespace GachaEngine.Engine
         }
     }
 
+    /// <summary>
+    /// Simple dictionary-backed <see cref="IGachaCurrencyWallet"/> for prototyping, offline play, and EditMode tests.
+    /// </summary>
     public sealed class InMemoryCurrencyWallet : IGachaCurrencyWallet
     {
         private readonly Dictionary<string, int> _balances = new Dictionary<string, int>(StringComparer.Ordinal);
 
+        /// <inheritdoc/>
         public int GetBalance(string currencyId) =>
             !string.IsNullOrEmpty(currencyId) && _balances.TryGetValue(currencyId, out int v) ? v : 0;
 
+        /// <inheritdoc/>
         public bool TrySpend(string currencyId, int amount)
         {
             if (amount <= 0) return true;
@@ -118,6 +151,7 @@ namespace GachaEngine.Engine
             return true;
         }
 
+        /// <inheritdoc/>
         public void Add(string currencyId, int amount)
         {
             if (string.IsNullOrEmpty(currencyId) || amount <= 0) return;

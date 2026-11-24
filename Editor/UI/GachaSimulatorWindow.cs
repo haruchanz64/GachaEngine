@@ -12,9 +12,9 @@ namespace GachaEngine.Editor.UI
 {
     /// <summary>
     /// UI Toolkit Banner Simulator with four tabs:
-    /// 1) Banner Pulls & Live Pity/Rate-Up Tuning
-    /// 2) Banner Details (Rate-Up Character/Item Showcase & Drop Rates)
-    /// 3) Pull History (1-Hour Refresh Window, Pagination & JSON/CSV Export)
+    /// 1) Banner Pulls and Live Pity/Rate-Up Tuning
+    /// 2) Banner Details (Rate-Up Character/Item Showcase and Drop Rates)
+    /// 3) Pull History (1-Hour Refresh Window, Pagination and JSON/CSV Export)
     /// 4) Bulk Monte Carlo Audit
     /// </summary>
     public sealed class GachaSimulatorWindow : EditorWindow
@@ -36,6 +36,9 @@ namespace GachaEngine.Editor.UI
         private ScrollView _body;
         private Label _statusLabel;
 
+        /// <summary>
+        /// Opens or focuses the GachaEngine Banner Simulator Editor window from the Unity menu bar.
+        /// </summary>
         [MenuItem("Tools/HaruChanZ64/Gameplay/GachaEngine/Banner Simulator", false, 134)]
         public static void ShowWindow()
         {
@@ -44,6 +47,10 @@ namespace GachaEngine.Editor.UI
             window.Show();
         }
 
+        /// <summary>
+        /// Opens the Banner Simulator window preloaded with <paramref name="banner"/> on the Banner and Pulls tab.
+        /// </summary>
+        /// <param name="banner">Banner asset to assign as the active simulation target.</param>
         public static void OpenWithBanner(GachaBannerAsset banner)
         {
             var window = GetWindow<GachaSimulatorWindow>("GachaEngine");
@@ -53,6 +60,9 @@ namespace GachaEngine.Editor.UI
             window.SelectTab(0);
         }
 
+        /// <summary>
+        /// Initializes the simulator's <see cref="GachaRoller"/> and temporary sandbox banner when the window enables.
+        /// </summary>
         private void OnEnable()
         {
             if (_roller == null)
@@ -62,6 +72,9 @@ namespace GachaEngine.Editor.UI
             EnsureSandboxBanner();
         }
 
+        /// <summary>
+        /// Destroys the temporary in-memory sandbox banner asset so it does not leak across Editor reloads.
+        /// </summary>
         private void OnDisable()
         {
             if (_sandboxBanner != null)
@@ -81,6 +94,9 @@ namespace GachaEngine.Editor.UI
             }
         }
 
+        /// <summary>
+        /// Creates a transient <see cref="GachaBannerAsset"/> seeded with the Limited Character preset when no asset is assigned.
+        /// </summary>
         private void EnsureSandboxBanner()
         {
             if (_sandboxBanner == null)
@@ -90,6 +106,9 @@ namespace GachaEngine.Editor.UI
             }
         }
 
+        /// <summary>
+        /// Builds the root UI Toolkit layout including header bar, tab navigation, scrollable body, and status bar.
+        /// </summary>
         public void CreateGUI()
         {
             if (_roller == null)
@@ -133,6 +152,9 @@ namespace GachaEngine.Editor.UI
             SelectTab(_activeTab);
         }
 
+        /// <summary>
+        /// Creates a styled tab button bound to <see cref="SelectTab"/> for <paramref name="index"/>.
+        /// </summary>
         private Button MakeTabBtn(string label, int index)
         {
             var btn = new Button(() => SelectTab(index)) { text = label };
@@ -140,6 +162,9 @@ namespace GachaEngine.Editor.UI
             return btn;
         }
 
+        /// <summary>
+        /// Switches the active simulator tab, updates tab highlight styling, and rebuilds the scroll body.
+        /// </summary>
         private void SelectTab(int index)
         {
             _activeTab = index;
@@ -163,7 +188,9 @@ namespace GachaEngine.Editor.UI
             }
         }
 
-        // ==================== TAB 1: BANNER & PULLS ====================
+        /// <summary>
+        /// Populates Tab 1 with banner selection, live pity/rate-up controls, pull triggers, pity progress bars, and latest results.
+        /// </summary>
         private void BuildBannerPullsTab()
         {
             var banner = ActiveBanner;
@@ -389,7 +416,9 @@ namespace GachaEngine.Editor.UI
             _body.Add(resCard);
         }
 
-        // ==================== TAB 2: BANNER DETAILS UI ====================
+        /// <summary>
+        /// Populates Tab 2 with banner overview, assigned media summary, featured item cards, full pool breakdown, and Step-Up milestones.
+        /// </summary>
         private void BuildBannerDetailsTab()
         {
             var banner = ActiveBanner;
@@ -518,7 +547,9 @@ namespace GachaEngine.Editor.UI
             _body.Add(ratesCard);
         }
 
-        // ==================== TAB 3: PULL HISTORY (1H REFRESH & JSON EXPORT) ====================
+        /// <summary>
+        /// Populates Tab 3 with 1-hour refresh status, manual/force refresh actions, JSON/CSV exporters, rarity filters, and paginated history rows.
+        /// </summary>
         private void BuildPullHistoryTab()
         {
             var hist = _roller.History;
@@ -639,7 +670,9 @@ namespace GachaEngine.Editor.UI
             _body.Add(listCard);
         }
 
-        // ==================== TAB 4: MONTE CARLO AUDIT ====================
+        /// <summary>
+        /// Populates Tab 4 with pull count controls and KPI cards displaying observed Monte Carlo simulation metrics.
+        /// </summary>
         private void BuildMonteCarloTab()
         {
             var banner = ActiveBanner;
@@ -682,6 +715,9 @@ namespace GachaEngine.Editor.UI
             _body.Add(card);
         }
 
+        /// <summary>
+        /// Executes a single or multi-pull against <see cref="ActiveBanner"/> and refreshes the Banner and Pulls tab.
+        /// </summary>
         private void DoPull(int count)
         {
             var banner = ActiveBanner;
@@ -690,6 +726,9 @@ namespace GachaEngine.Editor.UI
             SelectTab(0);
         }
 
+        /// <summary>
+        /// Clears any assigned banner asset, applies a preset to the transient sandbox banner, and reloads Tab 1.
+        /// </summary>
         private void LoadSandboxPreset(Action<GachaBannerAsset> configure, string label)
         {
             _assignedBanner = null;
@@ -700,6 +739,9 @@ namespace GachaEngine.Editor.UI
             SelectTab(0);
         }
 
+        /// <summary>
+        /// Resets roller pity, owned counts, pull history, and cached simulator results, then redraws the active tab.
+        /// </summary>
         private void ResetSimulatorState()
         {
             _roller.ResetAllState();
@@ -710,6 +752,9 @@ namespace GachaEngine.Editor.UI
             SelectTab(_activeTab);
         }
 
+        /// <summary>
+        /// Opens a save dialog and writes the pull history JSON export to disk.
+        /// </summary>
         private void ExportHistoryJson()
         {
             string path = EditorUtility.SaveFilePanel("Export Pull History JSON", Application.dataPath, "gacha_pull_history", "json");
@@ -718,6 +763,9 @@ namespace GachaEngine.Editor.UI
             SetStatus($"Exported pull history JSON to {path}");
         }
 
+        /// <summary>
+        /// Opens a save dialog and writes the pull history CSV export to disk.
+        /// </summary>
         private void ExportHistoryCsv()
         {
             string path = EditorUtility.SaveFilePanel("Export Pull History CSV", Application.dataPath, "gacha_pull_history", "csv");
@@ -726,11 +774,17 @@ namespace GachaEngine.Editor.UI
             SetStatus($"Exported pull history CSV to {path}");
         }
 
+        /// <summary>
+        /// Updates the footer status bar label text when initialized.
+        /// </summary>
         private void SetStatus(string msg)
         {
             if (_statusLabel != null) _statusLabel.text = msg;
         }
 
+        /// <summary>
+        /// Creates a section heading label styled with the <c>ge-section-title</c> USS class.
+        /// </summary>
         private static Label MakeTitle(string text)
         {
             var l = new Label(text);
@@ -738,6 +792,9 @@ namespace GachaEngine.Editor.UI
             return l;
         }
 
+        /// <summary>
+        /// Appends a label/value KPI tile into <paramref name="parent"/>.
+        /// </summary>
         private static void AddKpi(VisualElement parent, string label, string value)
         {
             var box = new VisualElement();
@@ -751,6 +808,9 @@ namespace GachaEngine.Editor.UI
             parent.Add(box);
         }
 
+        /// <summary>
+        /// Creates a horizontal progress bar element clamped to [0, 1] with the specified fill USS class.
+        /// </summary>
         private static VisualElement MakeProgressBar(float normalized, string fillClass)
         {
             var track = new VisualElement();
@@ -762,6 +822,9 @@ namespace GachaEngine.Editor.UI
             return track;
         }
 
+        /// <summary>
+        /// Loads <c>GachaSimulatorStyles.uss</c> from the package path (with AssetDatabase fallback) and attaches it to <paramref name="target"/>.
+        /// </summary>
         internal static void AttachStyles(VisualElement target)
         {
             const string pkgPath = "Packages/com.haruchanz64.gacha-engine/Editor/UI/GachaSimulatorStyles.uss";

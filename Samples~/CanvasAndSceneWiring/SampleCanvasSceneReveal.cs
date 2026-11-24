@@ -14,7 +14,7 @@ namespace GachaEngine.Samples
     /// Inspector wiring (no code needed for buttons):
     /// 1. Add GachaController + GachaRevealPresenter (or this script) to a scene GameObject.
     /// 2. Assign your GachaBannerAsset list and drag this component into GachaController.revealSequenceBehaviour.
-    /// 3. Bind Canvas Button.onClick() -> GachaController.PullSingleActiveBanner / PullTenActiveBanner / SkipReveal.
+    /// 3. Bind Canvas Button.onClick() to GachaController.PullSingleActiveBanner, PullTenActiveBanner, or SkipReveal.
     /// 4. Bind GachaController.onPullRevealed and onBatchFinished to your Canvas result panel.
     /// </summary>
     public sealed class SampleCanvasSceneReveal : MonoBehaviour, IGachaRevealSequence
@@ -27,6 +27,9 @@ namespace GachaEngine.Samples
 
         private GameObject _activeVfx;
 
+        /// <summary>
+        /// Registers this component as the controller's reveal sequence and subscribes to reveal events.
+        /// </summary>
         private void Awake()
         {
             if (controller != null)
@@ -37,6 +40,9 @@ namespace GachaEngine.Samples
             }
         }
 
+        /// <summary>
+        /// Unsubscribes from controller events and destroys any active temporary VFX object.
+        /// </summary>
         private void OnDestroy()
         {
             if (controller != null)
@@ -47,6 +53,7 @@ namespace GachaEngine.Samples
             CleanupPresentation();
         }
 
+        /// <inheritdoc/>
         public IEnumerator PlayBatchIntro(
             GachaBannerAsset banner,
             GachaPullBatchResult batch,
@@ -75,6 +82,7 @@ namespace GachaEngine.Samples
             }
         }
 
+        /// <inheritdoc/>
         public IEnumerator PlayItemReveal(
             GachaBannerAsset banner,
             GachaPullResult result,
@@ -93,6 +101,7 @@ namespace GachaEngine.Samples
             }
         }
 
+        /// <inheritdoc/>
         public void CleanupPresentation()
         {
             if (_activeVfx != null)
@@ -102,11 +111,17 @@ namespace GachaEngine.Samples
             }
         }
 
+        /// <summary>
+        /// Logs each revealed item's rarity label and display name to the Unity Console.
+        /// </summary>
         private static void HandleItemRevealed(GachaPullResult result)
         {
             Debug.Log($"[SampleCanvasSceneReveal] Reveal: [{result.rarityLabel}] {result.item.displayName}");
         }
 
+        /// <summary>
+        /// Logs the completed batch summary once all item reveals finish.
+        /// </summary>
         private static void HandleBatchFinished(GachaPullBatchResult batch)
         {
             Debug.Log($"[SampleCanvasSceneReveal] Summary ready for {batch.bannerName} ({batch.results.Count} pulls).");

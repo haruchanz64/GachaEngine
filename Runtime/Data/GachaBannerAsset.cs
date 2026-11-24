@@ -41,6 +41,10 @@ namespace GachaEngine.Data
         [Header("Item / Character Pool")]
         public List<GachaItemEntry> items = new List<GachaItemEntry>();
 
+        /// <summary>
+        /// Returns the <see cref="RarityTierConfig"/> matching <paramref name="rarity"/>, or <c>null</c> if not configured.
+        /// </summary>
+        /// <param name="rarity">Rarity tier to look up.</param>
         public RarityTierConfig GetTierConfig(GachaRarity rarity)
         {
             for (int i = 0; i < tiers.Count; i++)
@@ -50,12 +54,19 @@ namespace GachaEngine.Data
             return null;
         }
 
+        /// <summary>
+        /// Returns the display label configured for <paramref name="rarity"/>, falling back to the enum name when unset.
+        /// </summary>
+        /// <param name="rarity">Rarity tier to format.</param>
         public string GetRarityLabel(GachaRarity rarity)
         {
             var cfg = GetTierConfig(rarity);
             return cfg != null ? cfg.EffectiveLabel : rarity.ToString();
         }
 
+        /// <summary>
+        /// Returns a new list containing every non-null item marked as <see cref="GachaItemEntry.isFeatured"/>.
+        /// </summary>
         public List<GachaItemEntry> GetFeaturedItems()
         {
             var list = new List<GachaItemEntry>();
@@ -66,6 +77,11 @@ namespace GachaEngine.Data
             return list;
         }
 
+        /// <summary>
+        /// Returns all non-null items matching <paramref name="rarity"/>, optionally filtered by featured status.
+        /// </summary>
+        /// <param name="rarity">Target rarity tier.</param>
+        /// <param name="featuredOnly">Pass <c>true</c> for featured items only, <c>false</c> for standard items only, or <c>null</c> for all items in the tier.</param>
         public List<GachaItemEntry> GetItemsByRarity(GachaRarity rarity, bool? featuredOnly = null)
         {
             var list = new List<GachaItemEntry>();
@@ -79,6 +95,9 @@ namespace GachaEngine.Data
             return list;
         }
 
+        /// <summary>
+        /// Populates this asset with a Limited 50/50 character banner template (0.6% Legendary, soft pity at 74, hard pity at 90, Epic hard pity at 10).
+        /// </summary>
         public void ApplyLimitedCharacterPreset()
         {
             bannerId = "limited_char_01";
@@ -155,6 +174,9 @@ namespace GachaEngine.Data
             };
         }
 
+        /// <summary>
+        /// Populates this asset with a Fate Path weapon banner template (75/25 featured odds, 80-pull hard pity, and 2-miss Fate Path guarantee).
+        /// </summary>
         public void ApplyFatePathWeaponPreset()
         {
             ApplyLimitedCharacterPreset();
@@ -196,6 +218,9 @@ namespace GachaEngine.Data
             };
         }
 
+        /// <summary>
+        /// Populates this asset with a 5-step recruitment ladder template featuring discounted early steps and guaranteed Epic/Featured Legendary milestones.
+        /// </summary>
         public void ApplyStepUpPreset()
         {
             ApplyLimitedCharacterPreset();

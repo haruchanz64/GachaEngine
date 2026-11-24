@@ -7,9 +7,15 @@ using UnityEngine.UIElements;
 
 namespace GachaEngine.Editor.Inspectors
 {
+    /// <summary>
+    /// UI Toolkit custom Inspector for <see cref="GachaBannerAsset"/> adding one-click preset buttons and a launcher for <see cref="GachaSimulatorWindow"/>.
+    /// </summary>
     [CustomEditor(typeof(GachaBannerAsset))]
     public sealed class GachaBannerInspector : UnityEditor.Editor
     {
+        /// <summary>
+        /// Builds the default Inspector fields followed by the preset template actions and Banner Simulator launch button.
+        /// </summary>
         public override VisualElement CreateInspectorGUI()
         {
             var root = new VisualElement();
@@ -45,6 +51,9 @@ namespace GachaEngine.Editor.Inspectors
             return root;
         }
 
+        /// <summary>
+        /// Records an Undo snapshot, applies a preset mutator to <paramref name="banner"/>, and marks the asset dirty.
+        /// </summary>
         private static void ApplyPreset(GachaBannerAsset banner, System.Action<GachaBannerAsset> apply)
         {
             Undo.RecordObject(banner, "Apply Gacha Banner Preset");

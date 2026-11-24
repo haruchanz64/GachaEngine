@@ -4,22 +4,40 @@ using UnityEngine;
 
 namespace GachaEngine.Data
 {
+    /// <summary>
+    /// Built-in rarity ordering evaluated from highest (<see cref="Legendary"/>) to lowest (<see cref="Common"/>).
+    /// Display labels are customizable per banner via <see cref="RarityTierConfig.customLabel"/>.
+    /// </summary>
     public enum GachaRarity
     {
+        /// <summary>Lowest rarity tier.</summary>
         Common = 0,
+        /// <summary>Standard filler tier (commonly labeled 3-star or R).</summary>
         Rare = 1,
+        /// <summary>Mid-high tier (commonly labeled 4-star, SR, or A-Rank).</summary>
         Epic = 2,
+        /// <summary>Top chase tier (commonly labeled 5-star, SSR, or S-Rank).</summary>
         Legendary = 3
     }
 
+    /// <summary>
+    /// High-level rule archetype for a <see cref="GachaBannerAsset"/>.
+    /// </summary>
     public enum GachaBannerType
     {
+        /// <summary>Permanent pool banner without Step-Up or Fate Path overrides.</summary>
         Standard = 0,
+        /// <summary>Rate-up banner with featured odds and cross-banner carry-over guarantees by <c>pityGroupId</c>.</summary>
         LimitedRateUp = 1,
+        /// <summary>Banner that guarantees a player-selected target item after a configured number of misses.</summary>
         FatePath = 2,
+        /// <summary>Multi-step ladder with per-step pull counts, cost overrides, and milestone rarity guarantees.</summary>
         StepUp = 3
     }
 
+    /// <summary>
+    /// Single pullable character, weapon, or reward entry inside a <see cref="GachaBannerAsset"/> pool.
+    /// </summary>
     [Serializable]
     public sealed class GachaItemEntry
     {
@@ -75,9 +93,15 @@ namespace GachaEngine.Data
         public AudioClip revealSfx;
         public AnimationClip revealAnimation;
 
+        /// <summary>
+        /// Display label for this tier, falling back to the <see cref="GachaRarity"/> enum name when <see cref="customLabel"/> is blank.
+        /// </summary>
         public string EffectiveLabel => string.IsNullOrWhiteSpace(customLabel) ? rarity.ToString() : customLabel;
     }
 
+    /// <summary>
+    /// Configuration for one step on a <see cref="GachaBannerType.StepUp"/> banner ladder.
+    /// </summary>
     [Serializable]
     public sealed class StepUpStepConfig
     {
@@ -89,6 +113,9 @@ namespace GachaEngine.Data
         public bool guaranteeFeatured;
     }
 
+    /// <summary>
+    /// Target guarantee configuration that awards the player's chosen item after <see cref="maxFatePoints"/> misses on <see cref="targetRarity"/>.
+    /// </summary>
     [Serializable]
     public sealed class FatePathConfig
     {
@@ -97,6 +124,9 @@ namespace GachaEngine.Data
         public GachaRarity targetRarity = GachaRarity.Legendary;
     }
 
+    /// <summary>
+    /// Mutable per-tier pity tracking record stored inside <see cref="GachaPityState"/>.
+    /// </summary>
     [Serializable]
     public sealed class TierPityCounter
     {
@@ -105,6 +135,9 @@ namespace GachaEngine.Data
         public bool guaranteedFeaturedNext;
     }
 
+    /// <summary>
+    /// Serializable pity, Fate Path, and Step-Up progression state shared by all banners with the same <see cref="pityGroupId"/>.
+    /// </summary>
     [Serializable]
     public sealed class GachaPityState
     {
@@ -115,6 +148,10 @@ namespace GachaEngine.Data
         public int currentStepIndex;
         public List<TierPityCounter> tierCounters = new List<TierPityCounter>();
 
+        /// <summary>
+        /// Returns the existing <see cref="TierPityCounter"/> for <paramref name="rarity"/>, adding a zeroed counter if absent.
+        /// </summary>
+        /// <param name="rarity">Rarity tier whose counter should be retrieved.</param>
         public TierPityCounter GetOrCreateCounter(GachaRarity rarity)
         {
             for (int i = 0; i < tierCounters.Count; i++)
@@ -128,16 +165,27 @@ namespace GachaEngine.Data
         }
     }
 
+    /// <summary>
+    /// Outcome of resolving ownership and duplicate or max-rank overflow currency rewards for a pulled item.
+    /// </summary>
     [Serializable]
     public struct DuplicateResolution
     {
+        /// <summary><c>true</c> when the player already owned at least one copy before this pull.</summary>
         public bool isDuplicate;
+        /// <summary><c>true</c> when <see cref="newOwnedCount"/> exceeds the item's <see cref="GachaItemEntry.maxOwnedRank"/>.</summary>
         public bool isMaxRankOverflow;
+        /// <summary>Total owned copy count after applying this pull.</summary>
         public int newOwnedCount;
+        /// <summary>Currency identifier awarded for this duplicate, or <c>null</c> for first-time acquisitions.</summary>
         public string rewardCurrencyId;
+        /// <summary>Currency amount awarded for this duplicate, or <c>0</c> for first-time acquisitions.</summary>
         public int rewardAmount;
     }
 
+    /// <summary>
+    /// Detailed outcome of a single gacha pull including item, rarity, pity triggers, duplicate resolution, and UTC/local timestamps.
+    /// </summary>
     [Serializable]
     public sealed class GachaPullResult
     {
@@ -161,6 +209,9 @@ namespace GachaEngine.Data
         public string pulledAtLocal;
     }
 
+    /// <summary>
+    /// Aggregate outcome of a single or multi-pull transaction, including currency spent, error details, and individual pull results.
+    /// </summary>
     [Serializable]
     public sealed class GachaPullBatchResult
     {
@@ -172,6 +223,9 @@ namespace GachaEngine.Data
         public string errorMessage;
         public List<GachaPullResult> results = new List<GachaPullResult>();
 
+        /// <summary>
+        /// Returns the highest <see cref="GachaRarity"/> present in <see cref="results"/>, or <see cref="GachaRarity.Common"/> if empty.
+        /// </summary>
         public GachaRarity GetHighestRarity()
         {
             GachaRarity highest = GachaRarity.Common;
@@ -186,6 +240,9 @@ namespace GachaEngine.Data
         }
     }
 
+    /// <summary>
+    /// Summary metrics produced by <see cref="Engine.GachaRoller.RunBulkSimulation"/> for drop-rate and pity auditing.
+    /// </summary>
     [Serializable]
     public sealed class GachaBulkSimulationReport
     {

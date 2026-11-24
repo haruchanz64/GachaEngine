@@ -7,7 +7,14 @@ using UnityEngine.Events;
 
 namespace GachaEngine.Presentation
 {
+    /// <summary>
+    /// Inspector-bindable <see cref="UnityEvent{T0, T1}"/> fired when a pull batch intro begins with the banner and highest rolled rarity.
+    /// </summary>
     [Serializable] public sealed class GachaIntroUnityEvent : UnityEvent<GachaBannerAsset, GachaRarity> { }
+
+    /// <summary>
+    /// Inspector-bindable <see cref="UnityEvent{T0, T1}"/> fired for each revealed item along with its tier accent color.
+    /// </summary>
     [Serializable] public sealed class GachaItemRevealUnityEvent : UnityEvent<GachaPullResult, Color> { }
 
     /// <summary>
@@ -46,6 +53,7 @@ namespace GachaEngine.Presentation
         private readonly List<GameObject> _spawnedObjects = new List<GameObject>();
         private GameObject _activePreviewObject;
 
+        /// <inheritdoc/>
         public IEnumerator PlayBatchIntro(
             GachaBannerAsset banner,
             GachaPullBatchResult batch,
@@ -81,6 +89,7 @@ namespace GachaEngine.Presentation
             yield return WaitSkippable(introDurationSeconds, isSkipRequested);
         }
 
+        /// <inheritdoc/>
         public IEnumerator PlayItemReveal(
             GachaBannerAsset banner,
             GachaPullResult result,
@@ -130,6 +139,7 @@ namespace GachaEngine.Presentation
             yield return WaitSkippable(itemRevealDurationSeconds, isSkipRequested);
         }
 
+        /// <inheritdoc/>
         public void CleanupPresentation()
         {
             ClearActivePreview();
@@ -149,6 +159,9 @@ namespace GachaEngine.Presentation
             onPresentationCleared?.Invoke();
         }
 
+        /// <summary>
+        /// Destroys the currently instantiated 3D item preview object if one exists.
+        /// </summary>
         private void ClearActivePreview()
         {
             if (_activePreviewObject != null)
@@ -158,12 +171,18 @@ namespace GachaEngine.Presentation
             }
         }
 
+        /// <summary>
+        /// Instantiates a temporary cutscene or VFX prefab and tracks it for cleanup at the end of the reveal.
+        /// </summary>
         private void SpawnTemporary(GameObject prefab, Transform parent)
         {
             var instance = Instantiate(prefab, parent);
             _spawnedObjects.Add(instance);
         }
 
+        /// <summary>
+        /// Plays <paramref name="clip"/> as a one-shot on <paramref name="source"/> when both references are assigned.
+        /// </summary>
         private static void PlayClip(AudioSource source, AudioClip clip)
         {
             if (source != null && clip != null)
@@ -172,6 +191,9 @@ namespace GachaEngine.Presentation
             }
         }
 
+        /// <summary>
+        /// Waits for <paramref name="seconds"/> using scaled or unscaled time, exiting early if <paramref name="isSkipRequested"/> returns <c>true</c>.
+        /// </summary>
         private IEnumerator WaitSkippable(float seconds, Func<bool> isSkipRequested)
         {
             if (seconds <= 0f) yield break;
@@ -189,6 +211,9 @@ namespace GachaEngine.Presentation
             }
         }
 
+        /// <summary>
+        /// Destroys a spawned GameObject safely in both Play Mode and Edit Mode.
+        /// </summary>
         private static void DestroyObjectSafe(GameObject go)
         {
             if (Application.isPlaying)

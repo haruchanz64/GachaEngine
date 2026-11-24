@@ -4,6 +4,13 @@ All notable changes to this package are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-11-24
+
+### Changed
+
+- Expanded `README.md` into a full developer guide covering the per-pull resolution pipeline, C# and custom extension code examples, core API reference table, included samples, test coverage, and troubleshooting notes.
+- Added XML documentation comments across all public types, methods, constructors, properties, events, and non-trivial internal/private helpers in `Runtime/`, `Editor/`, and `Samples~/`.
+
 ## [1.0.0] - 2026-10-09
 
 ### Added

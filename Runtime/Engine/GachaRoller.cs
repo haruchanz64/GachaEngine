@@ -22,12 +22,35 @@ namespace GachaEngine.Engine
         private readonly Dictionary<string, int> _ownedCounts = new Dictionary<string, int>(StringComparer.Ordinal);
         private readonly List<IGachaPoolModifier> _modifiers = new List<IGachaPoolModifier>();
 
+        /// <summary>
+        /// Persistence store holding pity, Fate Path, and Step-Up progression keyed by <c>pityGroupId</c>.
+        /// </summary>
         public IPityStore PityStore => _pityStore;
+
+        /// <summary>
+        /// Pull history log recording every executed pull with configurable refresh window and JSON/CSV export.
+        /// </summary>
         public GachaHistoryLog History { get; }
 
+        /// <summary>
+        /// Raised after each individual pull resolves and is recorded into <see cref="History"/>.
+        /// </summary>
         public event Action<GachaPullResult> OnPullCompleted;
+
+        /// <summary>
+        /// Raised after all pulls in a batch finish and pity state is saved.
+        /// </summary>
         public event Action<GachaPullBatchResult> OnBatchCompleted;
 
+        /// <summary>
+        /// Creates a new <see cref="GachaRoller"/> with optional custom RNG, pity store, duplicate resolver, wallet, history log, and UTC clock.
+        /// </summary>
+        /// <param name="rng">Random source; defaults to <see cref="SeededGachaRng"/>.</param>
+        /// <param name="pityStore">Pity state store; defaults to <see cref="InMemoryPityStore"/>.</param>
+        /// <param name="duplicateResolver">Duplicate reward resolver; defaults to <see cref="DefaultDuplicateResolver"/>.</param>
+        /// <param name="wallet">Optional currency wallet charged when <c>chargeWallet</c> is <c>true</c> and credited with duplicate rewards.</param>
+        /// <param name="history">Optional history log; defaults to a 2,000-record log with a 3,600-second refresh window.</param>
+        /// <param name="utcNowProvider">Optional UTC clock delegate for deterministic timestamps; defaults to <see cref="DateTime.UtcNow"/>.</param>
         public GachaRoller(
             IGachaRng rng = null,
             IPityStore pityStore = null,
@@ -44,6 +67,10 @@ namespace GachaEngine.Engine
             History = history ?? new GachaHistoryLog(2000, 3600, _utcNowProvider());
         }
 
+        /// <summary>
+        /// Registers an <see cref="IGachaPoolModifier"/> if it is non-null and not already attached.
+        /// </summary>
+        /// <param name="modifier">Pool modifier to invoke during tier probability calculation.</param>
         public void AddModifier(IGachaPoolModifier modifier)
         {
             if (modifier != null && !_modifiers.Contains(modifier))
@@ -52,8 +79,18 @@ namespace GachaEngine.Engine
             }
         }
 
+        /// <summary>
+        /// Unregisters a previously added <see cref="IGachaPoolModifier"/>.
+        /// </summary>
+        /// <param name="modifier">Modifier instance to remove.</param>
+        /// <returns><c>true</c> if the modifier was found and removed; otherwise <c>false</c>.</returns>
         public bool RemoveModifier(IGachaPoolModifier modifier) => _modifiers.Remove(modifier);
 
+        /// <summary>
+        /// Selects the Fate Path target item for <paramref name="banner"/>'s pity group, resetting accumulated Fate Points when the target changes.
+        /// </summary>
+        /// <param name="banner">Banner whose <c>pityGroupId</c> stores the Fate Path selection.</param>
+        /// <param name="itemId">Item identifier matching <see cref="GachaItemEntry.itemId"/>.</param>
         public void SetFateTarget(GachaBannerAsset banner, string itemId)
         {
             if (banner == null) return;
@@ -66,9 +103,16 @@ namespace GachaEngine.Engine
             }
         }
 
+        /// <summary>
+        /// Returns the number of copies of <paramref name="itemId"/> tracked in this roller's ownership table.
+        /// </summary>
+        /// <param name="itemId">Item identifier to query.</param>
         public int GetOwnedCount(string itemId) =>
             !string.IsNullOrEmpty(itemId) && _ownedCounts.TryGetValue(itemId, out int c) ? c : 0;
 
+        /// <summary>
+        /// Clears all pity states, tracked item ownership counts, and pull history records.
+        /// </summary>
         public void ResetAllState()
         {
             _pityStore.Clear();
@@ -76,11 +120,24 @@ namespace GachaEngine.Engine
             History.Clear(_utcNowProvider());
         }
 
+        /// <summary>
+        /// Executes a single pull on <paramref name="banner"/> (delegates to <see cref="RollMulti"/> with count <c>1</c>).
+        /// </summary>
+        /// <param name="banner">Banner asset to roll.</param>
+        /// <param name="chargeWallet">When <c>true</c> and a wallet is configured, verifies and deducts pull currency before rolling.</param>
+        /// <returns>Batch result containing the single pull, or a failed result on invalid banner or insufficient funds.</returns>
         public GachaPullBatchResult RollSingle(GachaBannerAsset banner, bool chargeWallet = false)
         {
             return RollMulti(banner, 1, chargeWallet);
         }
 
+        /// <summary>
+        /// Executes a multi-pull batch on <paramref name="banner"/>, applying Step-Up step overrides, wallet charging, pity progression, history logging, and events.
+        /// </summary>
+        /// <param name="banner">Banner asset to roll.</param>
+        /// <param name="count">Requested pull count (clamped to at least <c>1</c>; overridden by the active step's <see cref="StepUpStepConfig.pullCount"/> on Step-Up banners).</param>
+        /// <param name="chargeWallet">When <c>true</c> and a wallet is configured, verifies and deducts pull currency before rolling.</param>
+        /// <returns>Batch result containing every <see cref="GachaPullResult"/>, total currency spent, and success status.</returns>
         public GachaPullBatchResult RollMulti(GachaBannerAsset banner, int count = 10, bool chargeWallet = false)
         {
             var batch = new GachaPullBatchResult
@@ -141,6 +198,9 @@ namespace GachaEngine.Engine
             return batch;
         }
 
+        /// <summary>
+        /// Resolves one pull: increments pity counters, selects rarity via Step-Up/hard pity/soft pity/modifiers, selects the concrete item, and applies duplicate rewards.
+        /// </summary>
         private GachaPullResult ExecuteSinglePull(GachaBannerAsset banner, GachaPityState pity, StepUpStepConfig stepOverride)
         {
             pity.totalPulls++;
@@ -286,6 +346,9 @@ namespace GachaEngine.Engine
             };
         }
 
+        /// <summary>
+        /// Picks a concrete <see cref="GachaItemEntry"/> within <paramref name="rarity"/> using priority order: Fate Path, Step-Up featured guarantee, featured rate-up flip/carry-over, then weighted fallback.
+        /// </summary>
         private GachaItemEntry ResolveItemWithinRarity(
             GachaBannerAsset banner,
             RarityTierConfig tier,
@@ -369,6 +432,9 @@ namespace GachaEngine.Engine
             return fallback;
         }
 
+        /// <summary>
+        /// Resets Fate Points when <paramref name="chosen"/> matches <see cref="GachaPityState.selectedFateItemId"/>, or increments up to <see cref="FatePathConfig.maxFatePoints"/> on a miss.
+        /// </summary>
         private static void UpdateFatePointsAfterPick(
             GachaBannerAsset banner,
             GachaRarity rarity,
@@ -392,6 +458,9 @@ namespace GachaEngine.Engine
             }
         }
 
+        /// <summary>
+        /// Performs a weighted random selection across <paramref name="pool"/> using each entry's <see cref="GachaItemEntry.weight"/> (clamped to at least <c>0.01</c>).
+        /// </summary>
         private GachaItemEntry PickWeighted(List<GachaItemEntry> pool)
         {
             if (pool == null || pool.Count == 0) return null;
@@ -411,6 +480,9 @@ namespace GachaEngine.Engine
             return pool[pool.Count - 1];
         }
 
+        /// <summary>
+        /// Finds the first entry in <paramref name="pool"/> whose <see cref="GachaItemEntry.itemId"/> matches <paramref name="itemId"/> using ordinal comparison.
+        /// </summary>
         private static GachaItemEntry FindItemById(List<GachaItemEntry> pool, string itemId)
         {
             for (int i = 0; i < pool.Count; i++)
@@ -420,6 +492,13 @@ namespace GachaEngine.Engine
             return null;
         }
 
+        /// <summary>
+        /// Runs an isolated Monte Carlo simulation on <paramref name="banner"/> and returns observed rarity counts, rate-up splits, averages, and duplicate currency totals.
+        /// </summary>
+        /// <param name="banner">Banner configuration to audit.</param>
+        /// <param name="pullCount">Number of pulls to simulate (clamped to at least <c>100</c>).</param>
+        /// <param name="selectedFateItemId">Optional Fate Path target item ID to track during simulation.</param>
+        /// <param name="seed">Optional RNG seed for reproducible audit runs.</param>
         public static GachaBulkSimulationReport RunBulkSimulation(
             GachaBannerAsset banner,
             int pullCount = 10000,

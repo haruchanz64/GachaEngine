@@ -1,6 +1,6 @@
 {
   "name": "com.haruchanz64.gacha-engine",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "displayName": "GachaEngine",
   "description": "Modular Unity 6 gacha and banner framework supporting Standard, Limited 50/50, Fate Path, and Step-Up banners, customizable rarity labels and pity rules, 1-hour refreshed JSON pull history, and a UI Toolkit simulator with Banner Details and History views.",
   "unity": "6000.0",

@@ -8,10 +8,19 @@ using UnityEngine.Events;
 
 namespace GachaEngine.Engine
 {
+    /// <summary>Inspector-bindable <see cref="UnityEvent{T0}"/> carrying a <see cref="GachaBannerAsset"/>.</summary>
     [Serializable] public sealed class GachaBannerUnityEvent : UnityEvent<GachaBannerAsset> { }
+
+    /// <summary>Inspector-bindable <see cref="UnityEvent{T0}"/> carrying a <see cref="GachaRarity"/>.</summary>
     [Serializable] public sealed class GachaRarityUnityEvent : UnityEvent<GachaRarity> { }
+
+    /// <summary>Inspector-bindable <see cref="UnityEvent{T0}"/> carrying a single <see cref="GachaPullResult"/>.</summary>
     [Serializable] public sealed class GachaPullResultUnityEvent : UnityEvent<GachaPullResult> { }
+
+    /// <summary>Inspector-bindable <see cref="UnityEvent{T0}"/> carrying a completed <see cref="GachaPullBatchResult"/>.</summary>
     [Serializable] public sealed class GachaPullBatchUnityEvent : UnityEvent<GachaPullBatchResult> { }
+
+    /// <summary>Inspector-bindable <see cref="UnityEvent{T0}"/> carrying an error message when a pull fails.</summary>
     [Serializable] public sealed class GachaErrorUnityEvent : UnityEvent<string> { }
 
     /// <summary>
@@ -47,6 +56,9 @@ namespace GachaEngine.Engine
         private Coroutine _activeRevealCoroutine;
         private bool _skipRequested;
 
+        /// <summary>
+        /// Underlying <see cref="GachaRoller"/> instance, lazily initialized on first access.
+        /// </summary>
         public GachaRoller Roller
         {
             get
@@ -56,6 +68,9 @@ namespace GachaEngine.Engine
             }
         }
 
+        /// <summary>
+        /// Built-in <see cref="InMemoryCurrencyWallet"/> used when <c>enforceWalletBalance</c> is enabled, lazily initialized on first access.
+        /// </summary>
         public InMemoryCurrencyWallet Wallet
         {
             get
@@ -65,9 +80,19 @@ namespace GachaEngine.Engine
             }
         }
 
+        /// <summary>
+        /// Read-only list of banners registered on this controller.
+        /// </summary>
         public IReadOnlyList<GachaBannerAsset> Banners => banners;
+
+        /// <summary>
+        /// <c>true</c> while an <see cref="IGachaRevealSequence"/> coroutine is currently playing.
+        /// </summary>
         public bool IsRevealing => _activeRevealCoroutine != null;
 
+        /// <summary>
+        /// Currently selected banner clamped to the bounds of <see cref="Banners"/>, or <c>null</c> when no banners are configured.
+        /// </summary>
         public GachaBannerAsset ActiveBanner
         {
             get
@@ -78,7 +103,14 @@ namespace GachaEngine.Engine
             }
         }
 
+        /// <summary>
+        /// Raised for each individual pull immediately when rolled by <see cref="Roller"/> (before reveal playback).
+        /// </summary>
         public event Action<GachaPullResult> OnPullCompleted;
+
+        /// <summary>
+        /// Raised after all pulls in a batch finish rolling (before reveal playback).
+        /// </summary>
         public event Action<GachaPullBatchResult> OnBatchCompleted;
 
         private void Awake()
@@ -86,6 +118,11 @@ namespace GachaEngine.Engine
             EnsureInitialized();
         }
 
+        /// <summary>
+        /// Replaces the configured banner list, seeds starting wallet currency for each banner, and selects <paramref name="initialIndex"/>.
+        /// </summary>
+        /// <param name="bannerAssets">Sequence of banners to assign; <c>null</c> clears the list.</param>
+        /// <param name="initialIndex">Zero-based banner index to activate, clamped to valid bounds.</param>
         public void SetBanners(IEnumerable<GachaBannerAsset> bannerAssets, int initialIndex = 0)
         {
             banners.Clear();
@@ -102,6 +139,10 @@ namespace GachaEngine.Engine
             }
         }
 
+        /// <summary>
+        /// Selects the active banner by zero-based index and invokes <see cref="onActiveBannerChanged"/>.
+        /// </summary>
+        /// <param name="index">Banner index, clamped to <see cref="Banners"/> bounds.</param>
         public void SelectBanner(int index)
         {
             if (banners == null || banners.Count == 0) return;
@@ -109,6 +150,10 @@ namespace GachaEngine.Engine
             onActiveBannerChanged?.Invoke(ActiveBanner);
         }
 
+        /// <summary>
+        /// Selects <paramref name="banner"/> as the active banner, appending it to <see cref="Banners"/> and seeding currency if not already present.
+        /// </summary>
+        /// <param name="banner">Banner asset to activate; ignored when <c>null</c>.</param>
         public void SelectBanner(GachaBannerAsset banner)
         {
             if (banner == null) return;
@@ -123,6 +168,10 @@ namespace GachaEngine.Engine
             onActiveBannerChanged?.Invoke(banner);
         }
 
+        /// <summary>
+        /// Assigns a runtime <see cref="IGachaRevealSequence"/> that overrides the Inspector-assigned <c>revealSequenceBehaviour</c>.
+        /// </summary>
+        /// <param name="sequence">Custom reveal sequence, or <c>null</c> to revert to the Inspector reference.</param>
         public void SetRevealSequence(IGachaRevealSequence sequence)
         {
             _customRevealSequence = sequence;
@@ -164,22 +213,42 @@ namespace GachaEngine.Engine
         }
 
         /// <summary>
-        /// Checks the 1-hour history refresh window and publishes pending pulls if elapsed.
+        /// Checks the configured history refresh window and publishes pending pulls if elapsed.
         /// </summary>
+        /// <returns><c>true</c> if pending records were flushed into published history; otherwise <c>false</c>.</returns>
         public bool RefreshHistoryIfReady()
         {
             return Roller.History.TryRefresh();
         }
 
+        /// <summary>
+        /// Executes a single pull on <paramref name="banner"/> and starts reveal presentation when available.
+        /// </summary>
+        /// <param name="banner">Target banner asset to roll.</param>
+        /// <returns>Batch result containing one pull outcome, or a failed result with <see cref="GachaPullBatchResult.errorMessage"/>.</returns>
         public GachaPullBatchResult PullSingle(GachaBannerAsset banner) =>
             ExecuteRollAndPresentation(banner, 1);
 
+        /// <summary>
+        /// Executes a 10-pull batch (or the current Step-Up step) on <paramref name="banner"/> and starts reveal presentation when available.
+        /// </summary>
+        /// <param name="banner">Target banner asset to roll.</param>
+        /// <returns>Batch result containing the rolled outcomes, or a failed result with <see cref="GachaPullBatchResult.errorMessage"/>.</returns>
         public GachaPullBatchResult PullTen(GachaBannerAsset banner) =>
             ExecuteRollAndPresentation(banner, 10);
 
+        /// <summary>
+        /// Executes <paramref name="count"/> pulls on <paramref name="banner"/> and starts reveal presentation when available.
+        /// </summary>
+        /// <param name="banner">Target banner asset to roll.</param>
+        /// <param name="count">Number of pulls requested (overridden by step configuration on Step-Up banners).</param>
+        /// <returns>Batch result containing the rolled outcomes, or a failed result with <see cref="GachaPullBatchResult.errorMessage"/>.</returns>
         public GachaPullBatchResult PullMulti(GachaBannerAsset banner, int count) =>
             ExecuteRollAndPresentation(banner, count);
 
+        /// <summary>
+        /// Runs the underlying roll, fires Inspector events, and either launches the active <see cref="IGachaRevealSequence"/> coroutine or dispatches events immediately.
+        /// </summary>
         private GachaPullBatchResult ExecuteRollAndPresentation(GachaBannerAsset banner, int count)
         {
             EnsureInitialized();
@@ -234,6 +303,9 @@ namespace GachaEngine.Engine
             return batch;
         }
 
+        /// <summary>
+        /// Coroutine driving <see cref="IGachaRevealSequence.PlayBatchIntro"/>, per-item <see cref="IGachaRevealSequence.PlayItemReveal"/>, cleanup, and <see cref="onBatchFinished"/>.
+        /// </summary>
         private IEnumerator RunRevealRoutine(
             IGachaRevealSequence sequence,
             GachaBannerAsset banner,
@@ -260,12 +332,18 @@ namespace GachaEngine.Engine
             onBatchFinished?.Invoke(batch);
         }
 
+        /// <summary>
+        /// Returns the runtime-assigned reveal sequence if set, otherwise casts <c>revealSequenceBehaviour</c> to <see cref="IGachaRevealSequence"/>.
+        /// </summary>
         private IGachaRevealSequence ResolveRevealSequence()
         {
             if (_customRevealSequence != null) return _customRevealSequence;
             return revealSequenceBehaviour as IGachaRevealSequence;
         }
 
+        /// <summary>
+        /// Lazily initializes the internal wallet, history log, and <see cref="GachaRoller"/> and forwards roller events.
+        /// </summary>
         private void EnsureInitialized()
         {
             if (_roller != null) return;
@@ -279,6 +357,9 @@ namespace GachaEngine.Engine
             _roller.OnBatchCompleted += b => OnBatchCompleted?.Invoke(b);
         }
 
+        /// <summary>
+        /// Seeds starting currency balances for every banner currently in <see cref="Banners"/>.
+        /// </summary>
         private void SeedWalletForBanners()
         {
             if (_wallet == null || banners == null) return;
@@ -288,6 +369,9 @@ namespace GachaEngine.Engine
             }
         }
 
+        /// <summary>
+        /// Credits <c>startingCurrencyAmount</c> for <paramref name="banner"/>'s currency when its current balance is zero.
+        /// </summary>
         private void SeedWalletForBanner(GachaBannerAsset banner)
         {
             if (_wallet == null || banner == null || string.IsNullOrEmpty(banner.currencyId)) return;
